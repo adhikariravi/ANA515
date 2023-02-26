@@ -1,0 +1,94 @@
+---
+title: "ANA515Assignment2AdhikariRavi"
+author: "Ravi Adhikari"
+date: "2023-02-15"
+output: html_document
+theme:
+  bootswatch: flatly
+---
+
+# Description
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# import libraries
+library(tidyverse)
+# library(knitr)
+# library(bslib)
+library(dplyr)
+
+# read csv using read.csv option. The file is stored locally, and can be replaced with remote url.
+
+survey_responses <- read.csv("~/Desktop/ANA515/men.csv", header = TRUE)
+
+```
+
+
+> The dataset I am working on is collected by Five Thirty Eight together with SurveyMonkey. This nationwide survey had `r count(survey_responses)` male participants. This report aims to deliver an insight on the psychological state of the participants. How does the society put mental pressure on men? What is the disadvantage of being a man at work? Have they ever felt harassment? The survey responses are formatted in a comma-delimited csv file.
+
+```{r, echo=FALSE}
+# q1: How important is masculinity to you?
+# q5: Do you feel society puts pressure on men to be an ideal figure?
+# q11: Disadvantages of being a man at work?
+# q10.2: Are men taken more seriously at work?
+# 
+
+survey_responses <- survey_responses %>%
+  rename(importance = q0002) %>%
+  rename(social_pressure = q0005) %>%
+  # rename(disadv = q0011) %>%
+  rename(treated_serious = q0010_0002) %>%
+  rename(harrasment_risk = q0011_0002)
+
+survey_responses$social_pressure_bool = ifelse(survey_responses$social_pressure == "Yes", 1, 0)
+
+dataset <- survey_responses %>% select(
+    social_pressure, social_pressure_bool, importance, treated_serious, harrasment_risk
+  )
+
+# using the factor method, the scale values are enumerated at once.
+
+dataset$importance = factor(dataset$importance,
+               levels = c("Very important", "Somewhat important", "No answer", "Not too important", "Not at all important"),
+               labels = c(2, 1, 0, -1, -2))
+
+dataset$harrasment = ifelse(survey_responses$harrasment == "Greater risk of being accused of sexual harassment", 1, 0)
+
+```
+
+
+> This dataframe has `r nrow(dataset)` rows and `r ncol(dataset)` columns. The names of the columns and a brief description of each are in the table below:
+
+sn|column|description|
+|---|---|---|
+1|importance|the basic need to feel manliness|
+2|social pressure|does the society put pressure to be an ideal man|
+3|treated seriously|does the person feel as a man, he is taken more seriously|
+4|harrasment risk|does the person feel at risk of being accused of harrasment|
+
+# Sample Analysis
+
+Two columns importance and harrasment were analyzed. The summary of the subset is shown below: 
+
+```{r, echo=FALSE}
+
+subset <- dataset %>%
+  select(importance, harrasment)
+
+result <- summary(subset)
+print(result)
+
+ggplot(subset, aes(x = importance)) +
+  geom_bar()
+
+```
+
+# Data Visualization
+
+```{r, echo=FALSE}
+
+# q18: Do you always pay on a date?
+subset$pay_on_a_date = survey_responses$q0018
+
+ggplot(subset, aes(x = pay_on_a_date)) + 
+  geom_bar()
+```
