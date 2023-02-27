@@ -1,0 +1,115 @@
+---
+title: "AssignmentThreeGettingAndCleaningData"
+author: "Ravi Adhikari"
+date: "2023-02-26"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+library(dplyr)
+
+# WORK_DIR = ~/Repo/ANA515/AssignmentThree
+
+full_dataset = read.csv('./Storm1996details.csv')
+
+# Step Two: Limit full_dataset to working dataset with the following columns :-
+
+# the beginning and ending dates and times 
+# BEGIN_YEARMONTH
+# the episode ID
+# the event ID
+# the state name and FIPS
+# the “CZ” name
+# type
+# CZ_FIPS
+# FIPS
+# the event type 
+# the source
+# the beginning latitude and longitude and ending latitude and longitude
+
+dataset <- full_dataset %>%
+  select(
+    
+    BEGIN_DATE_TIME, END_DATE_TIME,
+    
+    BEGIN_YEARMONTH,
+    
+    EPISODE_ID,
+    EVENT_ID,
+    
+    STATE,
+    STATE_FIPS,
+    
+    CZ_NAME,
+    CZ_TYPE,
+    CZ_FIPS,
+    
+    # FIPS? There isn't an exact FIPS column. 
+
+    EVENT_TYPE,
+    SOURCE,
+    
+    BEGIN_LAT, BEGIN_LON,
+    END_LAT, END_LON
+ 
+    )
+
+# Step Three: Sort by BEGIN_YEARMONTH
+dataset <- arrange(dataset, BEGIN_YEARMONTH, BEGIN_DATE_TIME)
+
+# Step Four: Change UPPERCASE to Title Case (STATE => State, CZ_NAME => CZ_Name)
+
+dataset$State <- str_to_title(dataset$STATE)
+
+dataset$CZ_Name <- str_to_title(dataset$CZ_NAME)
+
+dataset <- dataset %>% select (-STATE, -CZ_NAME)
+
+# Step Five: Filter CZ_TYPE == 'C' and drop CZ_TYPE column
+
+# dataset %>% count()
+# dataset %>% filter(CZ_TYPE == 'C') %>% count()
+
+dataset <- dataset %>% filter(CZ_TYPE == 'C') %>% select(-CZ_TYPE)
+
+# Step Six: (STATE + CZ_FIPS)
+
+
+dataset$pad_state <- str_pad(dataset$STATE_FIPS, width=3, pad = '0', side = 'left')
+dataset$pad_cz <- str_pad(dataset$CZ_FIPS, width=3, pad = '0', side = 'left')
+
+dataset <- unite(dataset, FIPS, pad_state, pad_cz, sep = "")
+
+# Step Seven: Rename all column names to lowercase
+
+dataset <- rename_all(dataset, tolower)
+
+# Step Eight: Load State Data set
+
+us_state_info<-data.frame(state=state.name, region=state.region, area=state.area)
+
+# Step Nine: Create Event Dataset 
+
+events_count <- data.frame(table(dataset$state))
+
+events_count <- rename(events_count, c("state" = "Var1"))
+
+storm_data <- merge(x=events_count, y=us_state_info, by.x="state", by.y="state")
+
+# Step Ten: Plot
+
+library(ggplot2)
+
+storm_plot <- ggplot(
+  storm_data,
+  aes(x = area, y = Freq)
+) + geom_point(
+  aes(color = region)
+) + labs(
+  x = "Land Area (Square Miles)",
+  y = "No. of Storm events in Year 1996"
+)
+storm_plot
+```
